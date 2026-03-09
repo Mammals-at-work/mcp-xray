@@ -20,19 +20,27 @@ export class AuthTokenProvider {
   ) {}
 
   public async getToken(): Promise<string> {
+    if (this.config.deployment !== "cloud") {
+      throw new XrayError("Xray token authentication is only available for cloud deployments");
+    }
+
+    if (!this.config.xrayClientId || !this.config.xrayClientSecret) {
+      throw new XrayError("Cloud deployments require XRAY_CLIENT_ID and XRAY_CLIENT_SECRET");
+    }
+
     if (this.cachedToken && this.cachedToken.expiresAt > this.now()) {
       return this.cachedToken.value;
     }
 
     const response = await this.httpClient.request<string>({
-      url: `${this.config.apiBaseUrl}/authenticate`,
+      url: `${this.config.xrayApiBaseUrl}/authenticate`,
       method: "POST",
       headers: {
         "content-type": "application/json"
       },
       body: JSON.stringify({
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret
+        client_id: this.config.xrayClientId,
+        client_secret: this.config.xrayClientSecret
       } satisfies AuthenticationPayload)
     });
 

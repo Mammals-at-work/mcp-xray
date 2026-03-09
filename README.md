@@ -2,6 +2,26 @@
 
 Servidor MCP para interactuar con Xray Cloud y Xray Data Center usando TypeScript 5.
 
+## Instalación
+
+```bash
+# Instalar dependencias
+npm install
+
+# Compilar el proyecto
+npm run build
+```
+
+## Uso
+
+Una vez compilado, ejecuta el servidor MCP:
+
+```bash
+node dist/index.js
+```
+
+El servidor se comunica mediante stdio (stdin/stdout) siguiendo el protocolo MCP, por lo que requiere ser invocado por un cliente MCP compatible.
+
 ## Funcionalidades iniciales
 
 - Soporte para despliegues `cloud` y `datacenter`
@@ -42,6 +62,38 @@ JIRA_PAT=your-personal-access-token
 XRAY_BASE_URL=https://jira.example.com
 XRAY_TOKEN_TTL_SECONDS=3000
 ```
+
+## Integración con VSCode
+
+Para usar este servidor MCP en VSCode con GitHub Copilot, agrega la siguiente configuración a tu archivo de settings MCP:
+
+**Windows/Linux:** `%APPDATA%\Code\User\globalStorage\github.copilot-chat\mcp.json`  
+**macOS:** `~/Library/Application Support/Code/User/globalStorage/github.copilot-chat/mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "xray": {
+      "command": "node",
+      "args": [
+        "/ruta/absoluta/a/mcp-xray/dist/index.js"
+      ],
+      "env": {
+        "XRAY_DEPLOYMENT": "cloud",
+        "XRAY_CLIENT_ID": "tu-client-id",
+        "XRAY_CLIENT_SECRET": "tu-client-secret",
+        "XRAY_BASE_URL": "https://xray.cloud.getxray.app",
+        "XRAY_TOKEN_TTL_SECONDS": "3000",
+        "JIRA_BASE_URL": "https://tu-dominio.atlassian.net",
+        "JIRA_EMAIL": "tu@email.com",
+        "JIRA_API_TOKEN": "tu-jira-api-token"
+      }
+    }
+  }
+}
+```
+
+Ajusta las variables de entorno según tu tipo de despliegue (cloud o datacenter). Una vez configurado, reinicia VSCode y el servidor MCP estará disponible para GitHub Copilot.
 
 ## Scripts
 

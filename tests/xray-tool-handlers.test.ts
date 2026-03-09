@@ -6,7 +6,8 @@ describe("createToolHandlers", () => {
   it("serializes the connection response as JSON text", async () => {
     const client = {
       checkConnection: vi.fn().mockResolvedValue({
-        baseUrl: "https://xray.cloud.getxray.app",
+        deployment: "cloud",
+        xrayBaseUrl: "https://xray.cloud.getxray.app",
         authenticated: true
       })
     } as unknown as XrayClient;
@@ -19,7 +20,8 @@ describe("createToolHandlers", () => {
           type: "text",
           text: JSON.stringify(
             {
-              baseUrl: "https://xray.cloud.getxray.app",
+              deployment: "cloud",
+              xrayBaseUrl: "https://xray.cloud.getxray.app",
               authenticated: true
             },
             null,
@@ -47,25 +49,41 @@ describe("createToolHandlers", () => {
     });
   });
 
-  it("validates import inputs before delegating", async () => {
+  it("delegates test execution creation to the client", async () => {
     const client = {
-      importExecutionResults: vi.fn().mockResolvedValue({ success: true })
+      createTestExecution: vi.fn().mockResolvedValue({ key: "CALC-1" })
     } as unknown as XrayClient;
 
     const handlers = createToolHandlers(client);
 
-    await expect(
-      handlers.importExecutionResults({
-        format: "junit",
-        reportContent: "<xml />"
-      })
-    ).resolves.toEqual({
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify({ success: true }, null, 2)
-        }
-      ]
+    await handlers.createTestExecution({
+      projectKey: "CALC",
+      summary: "Smoke execution",
+      description: "Triggered by CI"
+    });
+
+    expect(client.createTestExecution).toHaveBeenCalledWith({
+      projectKey: "CALC",
+      summary: "Smoke execution",
+      description: "Triggered by CI"
+    });
+  });
+
+  it("delegates test plan search to the client", async () => {
+    const client = {
+      searchTestPlans: vi.fn().mockResolvedValue({ issues: [] })
+    } as unknown as XrayClient;
+
+    const handlers = createToolHandlers(client);
+
+    await handlers.searchTestPlans({
+      projectKey: "CALC",
+      maxResults: 5
+    });
+
+    expect(client.searchTestPlans).toHaveBeenCalledWith({
+      projectKey: "CALC",
+      maxResults: 5
     });
   });
 });

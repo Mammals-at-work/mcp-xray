@@ -24,6 +24,7 @@ export interface SearchIssuesRequest {
   readonly issueType: "Test Execution" | "Test Plan";
   readonly projectKey?: string;
   readonly jql?: string;
+  readonly orderBy?: string;
   readonly maxResults?: number;
   readonly fields?: readonly string[];
 }
@@ -55,6 +56,10 @@ export class XrayClient {
   }> {
     if (this.config.deployment === "cloud") {
       await this.tokenProvider.getToken();
+
+      if (this.config.jiraApiBaseUrl) {
+        await this.getJiraCurrentUser();
+      }
     } else {
       await this.getJiraCurrentUser();
     }
@@ -165,8 +170,9 @@ export class XrayClient {
 
   private async searchIssues(request: SearchIssuesRequest): Promise<unknown> {
     const jiraApiBaseUrl = this.requireJiraApiBaseUrl();
+    const searchPath = this.config.jiraApiVersion === "3" ? "search/jql" : "search";
     const response = await this.httpClient.request<unknown>({
-      url: `${jiraApiBaseUrl}/search`,
+      url: `${jiraApiBaseUrl}/${searchPath}`,
       method: "POST",
       headers: {
         ...(await this.buildJiraHeaders()),
@@ -279,7 +285,13 @@ function buildIssueJql(request: SearchIssuesRequest): string {
     clauses.push(`(${request.jql})`);
   }
 
-  return clauses.join(" AND ");
+  let jql = clauses.join(" AND ");
+
+  if (request.orderBy) {
+    jql += ` ORDER BY ${request.orderBy}`;
+  }
+
+  return jql;
 }
 
 function formatDescription(config: XrayConfig, description: string): unknown {

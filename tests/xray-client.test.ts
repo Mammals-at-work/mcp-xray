@@ -50,7 +50,10 @@ const dataCenterConfig: XrayConfig = {
 
 describe("XrayClient", () => {
   it("reports a successful cloud connection once authenticated", async () => {
-    const httpClient = new QueueHttpClient([{ status: 200, ok: true, body: '"token"' }]);
+    const httpClient = new QueueHttpClient([
+      { status: 200, ok: true, body: '"token"' },
+      { status: 200, ok: true, body: { name: "carlo" } }
+    ]);
     const tokenProvider = new AuthTokenProvider(httpClient, cloudConfig, () => 0);
     const client = new XrayClient(httpClient, tokenProvider, cloudConfig);
 
@@ -80,7 +83,7 @@ describe("XrayClient", () => {
   it("executes GraphQL requests with the bearer token", async () => {
     const httpClient = new QueueHttpClient([
       { status: 200, ok: true, body: '"token"' },
-      { status: 200, ok: true, body: { data: { project: { key: "CALC" } } } }
+      { status: 200, ok: true, body: { data: {  project: { key: "CALC" } } } }
     ]);
     const tokenProvider = new AuthTokenProvider(httpClient, cloudConfig, () => 0);
     const client = new XrayClient(httpClient, tokenProvider, cloudConfig);
@@ -176,6 +179,25 @@ describe("XrayClient", () => {
         jql: 'issuetype = "Test Execution" AND project = "CALC" AND (status = "Done")',
         maxResults: 10,
         fields: ["summary"]
+      })
+    );
+  });
+
+  it("appends ORDER BY when orderBy is provided", async () => {
+    const httpClient = new QueueHttpClient([{ status: 200, ok: true, body: { issues: [] } }]);
+    const tokenProvider = new AuthTokenProvider(httpClient, cloudConfig, () => 0);
+    const client = new XrayClient(httpClient, tokenProvider, dataCenterConfig);
+
+    await client.searchTestExecutions({
+      projectKey: "OQA10",
+      orderBy: "created DESC",
+      maxResults: 25
+    });
+
+    expect(httpClient.requests[0]?.body).toBe(
+      JSON.stringify({
+        jql: 'issuetype = "Test Execution" AND project = "OQA10" ORDER BY created DESC',
+        maxResults: 25
       })
     );
   });
